@@ -1,0 +1,10 @@
+{
+  "id": "com.abp.live.tv",
+  "version": "1.0.0",
+  "vendor": "ABP Live",
+  "type": "web",
+  "main": "index.html",
+  "title": "ABP Live",
+  "icon": "assets/Logo.png",
+  "largeIcon": "assets/Logo.png"
+}

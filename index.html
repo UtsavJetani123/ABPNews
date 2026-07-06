@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABP TV</title>
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- HLS.js for HLS (.m3u8) Playback Support in Modern Browsers -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.11/dist/hls.min.js"></script>
+</head>
+<body>
+
+  <!-- Background Player Container (used for Language Screen backdrop image) -->
+  <div id="background-player-container">
+    <div id="backdrop-image"></div>
+  </div>
+
+  <!-- Splash Screen Overlay -->
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo-container">
+        <img src="assets/language_logos/live_h.svg" class="splash-logo" alt="ABP Live Logo">
+      </div>
+      <div class="splash-bottom-icons">
+        <div class="splash-bottom-logo logo-news"><img src="assets/language_logos/news_h.svg" alt="ABP News"></div>
+        <div class="splash-bottom-logo logo-majha"><img src="assets/language_logos/majha_h.svg" alt="ABP Majha"></div>
+        <div class="splash-bottom-logo logo-ananda"><img src="assets/language_logos/ananda_h.svg" alt="ABP Ananda"></div>
+        <div class="splash-bottom-logo logo-asmita"><img src="assets/language_logos/asmita_h.svg" alt="ABP Asmita"></div>
+        <div class="splash-bottom-logo logo-sanjha"><img src="assets/language_logos/sanjha_h.svg" alt="ABP Sanjha"></div>
+        <div class="splash-bottom-logo logo-nadu"><img src="assets/language_logos/nadu_h.svg" alt="ABP Nadu"></div>
+        <div class="splash-bottom-logo logo-desam"><img src="assets/language_logos/desam_h.svg" alt="ABP Desam"></div>
+        <div class="splash-bottom-logo logo-ganga"><img src="assets/language_logos/ganga_h.svg" alt="ABP Ganga"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Selection Screen -->
+  <div id="language-screen" class="screen-view">
+    <div class="language-view-overlay-red"></div>
+    <div class="language-view-overlay-black"></div>
+    <div class="language-content">
+      <div class="language-title">Choose your language</div>
+      <div class="language-center-group">
+        <div class="language-logo-preview-container">
+          <img id="language-logo-preview" src="" alt="ABP Live Logo Preview">
+        </div>
+        <div id="language-subtitle"></div>
+      </div>
+      <div class="language-selector-strip">
+        <div id="language-strip-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Home Screen -->
+  <div id="home-screen" class="screen-view">
+    <!-- Menu Pill (Top-left button when drawer is collapsed to 0) -->
+    <div id="menu-pill" class="hidden">
+      <!-- Back Chevron Arrow -->
+      <span class="pill-back-arrow" style="display: inline-flex; align-items: center; justify-content: center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </span>
+      <div class="pill-button">
+        <div class="pill-avatar">
+          <img src="assets/profile_pic.png" alt="Guest User">
+        </div>
+        <span class="pill-label">Menu</span>
+      </div>
+    </div>
+
+    <!-- Navigation Drawer (Sidebar) -->
+    <div id="navigation-drawer" class="drawer-icons">
+      <div class="drawer-profile-section">
+        <div id="drawer-profile-avatar">
+          <img src="assets/profile_pic.png" alt="Guest User">
+        </div>
+        <div id="drawer-profile-name">Guest</div>
+      </div>
+      <div class="drawer-menu-items top-items" id="drawer-top-menu"></div>
+      <div class="drawer-menu-items bottom-items" id="drawer-bottom-menu"></div>
+    </div>
+
+    <!-- Background Watermark ABP NEWS TV LIVE -->
+    <div class="hero-watermark" id="home-bg-watermark" style="opacity: 0.12; z-index: 3;">
+      <img class="watermark-logo" id="home-watermark-logo" src="" alt="ABP Logo" style="filter: brightness(0) invert(1); width: 80px; height: 80px; object-fit: contain; margin-right: 12px;">
+      <div class="watermark-text-wrap" style="margin-left: 12px;">
+        <span class="watermark-tv-box" style="border: 4px solid #fff; padding: 0 12px; border-radius: 8px; font-size: 54px; font-weight: 800; margin-right: 12px; display: inline-block; line-height: 1.2;">TV</span>
+        <span class="watermark-live-text" style="font-size: 54px; font-weight: 800; letter-spacing: 2px; line-height: 1.2;">LIVE</span>
+      </div>
+    </div>
+
+
+
+
+    <!-- Home Main Content Area -->
+    <div class="home-content" style="position: relative; z-index: 10; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end;">
+      <!-- Active Channel Hero Section (Hidden to prevent overlaps and match Mockup) -->
+      <div class="hero-carousel-rail" style="display: none; height: 140px; margin-bottom: 12px; width: 100%;">
+        <div class="hero-watermark" style="position: relative; left: 0; top: 0; transform: none; opacity: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; width: 100%;">
+          <div style="display: flex; align-items: center; margin-bottom: 6px;">
+            <img id="home-brand-logo" src="" alt="ABP Channel Logo" style="height: 36px; object-fit: contain;">
+          </div>
+          <div id="home-active-section-title" style="font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 2px;">Top TV Shows</div>
+          <div id="home-active-section-desc" style="font-size: 12px; color: #aaa; max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Catch the latest episodes from your favourite TV shows.</div>
+        </div>
+      </div>
+
+      <!-- Home Rails Scroll Area -->
+      <div id="home-rails-container"></div>
+    </div>
+  </div>
+
+  <!-- Error Toast Container -->
+  <div id="error-toast" class="hidden-element"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
