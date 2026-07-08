@@ -88,17 +88,8 @@
 
   <!-- Home Screen -->
   <div id="home-screen" class="screen-view">
-    <!-- Background Watermark ABP NEWS TV LIVE -->
-    <div class="hero-watermark" id="home-bg-watermark" style="opacity: 0.12; z-index: 3;">
-      <img class="watermark-logo" id="home-watermark-logo" src="" alt="ABP Logo" style="filter: brightness(0) invert(1); width: 80px; height: 80px; object-fit: contain; margin-right: 12px;">
-      <div class="watermark-text-wrap" style="margin-left: 12px;">
-        <span class="watermark-tv-box" style="border: 4px solid #fff; padding: 0 12px; border-radius: 8px; font-size: 54px; font-weight: 800; margin-right: 12px; display: inline-block; line-height: 1.2;">TV</span>
-        <span class="watermark-live-text" style="font-size: 54px; font-weight: 800; letter-spacing: 2px; line-height: 1.2;">LIVE</span>
-      </div>
-    </div>
-
-
-
+    <div id="home-bg-backdrop"></div>
+    <video id="live-video-element" playsinline muted></video>
 
     <!-- Home Main Content Area -->
     <div class="home-content" style="position: relative; z-index: 10; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end;">
@@ -115,6 +106,27 @@
 
       <!-- Home Rails Scroll Area -->
       <div id="home-rails-container"></div>
+    </div>
+
+    <div id="live-player-controls" class="hero-player-controls">
+      <div class="hero-controls-buttons">
+        <button id="player-btn-mute" class="hero-control-btn-circle" type="button" aria-label="Mute">
+          <svg id="svg-mute-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path>
+          </svg>
+        </button>
+        <button id="player-btn-fullscreen" class="hero-control-btn-circle" type="button" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 5h5v2H7v3H5V5zm9 0h5v5h-2V7h-3V5zM5 14h2v3h3v2H5v-5zm12 3v-3h2v5h-5v-2h3z"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="hero-progress-bar-container">
+        <div class="hero-progress-track">
+          <div id="player-progress-fill" class="hero-progress-fill"></div>
+          <div id="player-progress-knob" class="hero-progress-knob"></div>
+        </div>
+      </div>
     </div>
   </div>
 

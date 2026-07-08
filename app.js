@@ -392,6 +392,12 @@ async function loadLanguageMaster() {
 
 // Layout Screen view transitions
 function switchScreen(screen) {
+  const previousScreen = APP_STATE.currentScreen;
+  if (previousScreen === "HOME" && screen !== "HOME") {
+    resetLivePlayer();
+    hideHomeLiveBackdrop();
+  }
+
   const currentActive = document.querySelector(".screen-view.active-screen");
   if (currentActive) {
     currentActive.classList.remove("active-screen");
@@ -601,14 +607,10 @@ async function confirmLanguageSelection(slug) {
 // Show standard TV UI toast message
 function showToast(message, duration = 3000) {
   const toast = document.getElementById("error-toast");
-  if (!toast) return;
-  
-  toast.innerText = message;
-  toast.classList.remove("hidden-element");
-  
-  setTimeout(() => {
+  if (toast) {
+    toast.innerText = "";
     toast.classList.add("hidden-element");
-  }, duration);
+  }
 }
 
 // Open language screen setup handler
@@ -733,35 +735,17 @@ async function openHomeScreen() {
   lastActiveRailIndex = -1;
   lastActiveCardIndex = -1;
   
-  // Set up initial backdrop from first card of the first visible rail if present
-  const validRails = APP_STATE.homeData && Array.isArray(APP_STATE.homeData.rails)
-    ? APP_STATE.homeData.rails.filter(r => {
-        if (r.card_type === "live_tv_channel_rail") return false;
-        return (r.items || r.data || []).length > 0;
-      })
-    : [];
-    
-  const firstRail = validRails[0];
-  if (firstRail) {
-    const items = firstRail.items || firstRail.data || [];
-    const activeCard = items[0];
-    if (activeCard) {
-      const backdrop = document.getElementById("home-bg-backdrop");
-      if (backdrop) {
-        backdrop.style.backgroundImage = `url('${activeCard.lg_poster_image || activeCard.poster_image}')`;
-        backdrop.style.opacity = "1";
-      }
-    }
-  }
+  hideHomeLiveBackdrop();
   
-  // 4. Set Initial Focus area to sidebar
-  focusArea = "SIDEBAR";
-  activeSidebarIndex = 1; // Default to Home
+  // 4. Set Initial Focus to the first item in the first row list
+  focusArea = "GRID";
+  activeSidebarIndex = getHomeSidebarIndex();
   activeRailIndex = 0;
   activeCardIndex = 0;
   
-  expandDrawer();
+  collapseDrawer();
   updateSidebarFocus();
+  updateGridFocus();
 }
 
 // Get all navigation elements inside sidebar in order
@@ -771,6 +755,15 @@ function getSidebarElements() {
   const topItems = topMenu ? Array.from(topMenu.children) : [];
   const bottomItems = bottomMenu ? Array.from(bottomMenu.children) : [];
   return topItems.concat(bottomItems);
+}
+
+function getHomeSidebarIndex() {
+  const items = getSidebarElements();
+  const homeIndex = items.findIndex(item => {
+    const label = (item.querySelector(".nav-label")?.innerText || "").trim().toLowerCase();
+    return label === "home";
+  });
+  return homeIndex >= 0 ? homeIndex : 0;
 }
 
 const FALLBACK_NAV_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='4' width='16' height='16' rx='3' fill='white'/%3E%3C/svg%3E";
@@ -819,7 +812,7 @@ function renderNavigationDrawer() {
       
       // Separate Languages and Settings to bottom section
       const lowerLabel = labelText.toLowerCase();
-      if (lowerLabel === "languages" || lowerLabel === "settings") {
+      if (lowerLabel === "language" || lowerLabel === "languages" || lowerLabel === "settings") {
         bottomMenu.appendChild(navItem);
       } else {
         topMenu.appendChild(navItem);
@@ -849,6 +842,9 @@ function updateSidebarFocus() {
   // Set hero watermark brand name dynamically matching focused sidebar item
   const activeItem = items[activeSidebarIndex];
   if (activeItem && focusArea === "SIDEBAR") {
+    if (APP_STATE.currentScreen === "HOME") {
+      hideHomeLiveBackdrop();
+    }
     const label = activeItem.querySelector(".nav-label").innerText;
     document.getElementById("home-active-section-title").innerText = `Top ${label}`;
     document.getElementById("home-active-section-desc").innerText = `Browse our selected ${label} category from cheetah server.`;
@@ -861,9 +857,8 @@ function handleSidebarItemClick(item) {
   const labelHi = (item.label.hi || "").toLowerCase();
   const labelNormal = (item.label[APP_STATE.selectedLanguage] || "").toLowerCase();
   
-  if (labelEn === "languages" || labelHi === "languages" || labelNormal === "languages") {
-    switchScreen("LANGUAGE");
-    updateLanguageCarouselFocus();
+  if (labelEn === "language" || labelEn === "languages" || labelHi === "language" || labelHi === "languages" || labelNormal === "language" || labelNormal === "languages" || labelEn.includes("language") || labelHi.includes("language") || labelNormal.includes("language")) {
+    openLanguageSelectionScreen();
   } else if (labelEn === "search" || labelHi === "search" || labelNormal === "search" || labelEn.includes("search")) {
     openSearchScreen();
   } else if (labelEn === "tv shows" || labelHi === "tv shows" || labelNormal === "tv shows" || labelEn.includes("tv show") || labelEn.includes("show")) {
@@ -919,10 +914,6 @@ function getHomeRenderRails() {
   const renderRails = [];
   
   rails.forEach(rail => {
-    if (rail.card_type === "live_tv_channel_rail") {
-      return; // Exclude live TV channel rail
-    }
-    
     const items = rail.items || rail.data || [];
     if (items.length === 0) return;
     
@@ -1202,6 +1193,52 @@ function getOriginalsBackgroundImage(rail, item) {
     || "";
 }
 
+function getLiveTvBackgroundImage(rail, item) {
+  return (item && (
+    item.background_image ||
+    item.hero_image ||
+    item.banner_image ||
+    item.lg_poster_image ||
+    item.poster_image ||
+    item.thumbnail_image ||
+    item.image_url ||
+    item.image
+  ))
+    || (rail && (
+      rail.background_image ||
+      rail.hero_image ||
+      rail.banner_image ||
+      rail.lg_poster_image ||
+      rail.poster_image
+    ))
+    || "assets/background.png";
+}
+
+function hideHomeLiveBackdrop() {
+  const backdrop = document.getElementById("home-bg-backdrop");
+  if (backdrop) {
+    backdrop.style.opacity = "0";
+  }
+}
+
+function showHomeLiveBackdrop(rail, item) {
+  const backdrop = document.getElementById("home-bg-backdrop");
+  if (backdrop && item) {
+    backdrop.style.backgroundImage = toCssBackgroundImage(getLiveTvBackgroundImage(rail, item));
+    backdrop.style.opacity = "1";
+  }
+}
+
+function isLiveTvRailFocused() {
+  const currentRail = getHomeRenderRails()[activeRailIndex];
+  return focusArea === "GRID" && currentRail && currentRail.card_type === "live_tv_channel_rail";
+}
+
+function renderRedLoader(spanCols) {
+  const cols = spanCols || 1;
+  return `<div class="red-loader-wrap" style="grid-column: span ${cols};"><div class="red-loader" aria-label="Loading"></div></div>`;
+}
+
 function renderHomeRails() {
   const container = document.getElementById("home-rails-container");
   if (!container) return;
@@ -1241,6 +1278,7 @@ function renderHomeRails() {
     const isShortsRail = rail.card_type === "social_trending_shorts_rail";
     const isShortVideoNewsGrid = rail.card_type === "short_video_news_grid";
     const isAnchorSpotlight = rail.card_type === "anchor_spotlight_section";
+    const isLiveTvRail = rail.card_type === "live_tv_channel_rail";
 
     if (isAnchorSpotlight) {
       renderAnchorSpotlight(railEl, rail, rIdx);
@@ -1248,7 +1286,24 @@ function renderHomeRails() {
       return;
     }
 
-    if (isPopularRow1) {
+    if (isLiveTvRail) {
+      railEl.style.display = "block";
+      railEl.classList.add("live-tv-home-rail");
+      railEl.innerHTML = `
+        <div class="live-tv-hero-section">
+          <div class="live-tv-rail-gradient"></div>
+          <div class="rail-scroll live-tv-rail-scroll" id="rail-scroll-${rIdx}">
+            <div class="rail-scroll-inner live-tv-scroll-inner"></div>
+          </div>
+          <div class="live-tv-down-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"></path>
+              <path d="m5 12 7 7 7-7"></path>
+            </svg>
+          </div>
+        </div>
+      `;
+    } else if (isPopularRow1) {
       // Create a wrapper for the popular shows section with the background gradient image
       popularWrapper = document.createElement("div");
       popularWrapper.className = "popular-shows-section-wrapper";
@@ -1381,7 +1436,33 @@ function renderHomeRails() {
       cardWrapper.setAttribute("data-rail", rIdx.toString());
       cardWrapper.setAttribute("data-card", cIdx.toString());
       
-      if (isPopularRow1 || isPopularRow2) {
+      if (isLiveTvRail) {
+        const thumbSrc = getLiveTvBackgroundImage(rail, item);
+        const title = item.title || item.name || "";
+        const isLive = (item.is_live !== false) && ((item.news_type || "").toLowerCase() !== "video");
+
+        cardWrapper.classList.add("live-tv-card-wrapper");
+        cardWrapper.innerHTML = `
+          <div class="live-tv-card">
+            <img src="${thumbSrc}" alt="${title}">
+            <div class="live-tv-card-shade"></div>
+            ${isLive ? `
+              <div class="live-tv-badge">
+                <span class="live-tv-badge-icon">⌾</span>
+                <span>LIVE TV</span>
+              </div>
+            ` : ""}
+            <div class="live-tv-expand-dot" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3H3v5"></path>
+                <path d="M16 3h5v5"></path>
+                <path d="M8 21H3v-5"></path>
+                <path d="M16 21h5v-5"></path>
+              </svg>
+            </div>
+          </div>
+        `;
+      } else if (isPopularRow1 || isPopularRow2) {
         // Render custom colored banner popular card
         const colorIdx = isPopularRow2 ? cIdx + 2 : cIdx;
         const bannerColor = popularShowColors[colorIdx % popularShowColors.length];
@@ -1542,13 +1623,11 @@ function renderHomeRails() {
     container.appendChild(popularWrapper);
   }
   
-  // Update header brand logo & background watermark logo
+  // Update header brand logo
   const brandLogoEl = document.getElementById("home-brand-logo");
-  const watermarkLogoEl = document.getElementById("home-watermark-logo");
   const activeLang = APP_STATE.languages[currentLanguageIndex];
   if (activeLang) {
     if (brandLogoEl) brandLogoEl.src = activeLang.logo;
-    if (watermarkLogoEl) watermarkLogoEl.src = activeLang.logo;
   }
 }
 
@@ -1709,6 +1788,12 @@ function updateGridFocus() {
             descEl.textContent = (focusedItem && (focusedItem.description || focusedItem.title)) || "";
           }
         }
+        // --- Live TV Channel Rail: update only the home backdrop on focus ---
+        if (railData && railData.card_type === "live_tv_channel_rail") {
+          const items = railData.items || [];
+          const focusedItem = items[targetCardIdx];
+          showHomeLiveBackdrop(railData, focusedItem);
+        }
         // -------------------------------------------------------------------
         
         if (scrollInnerEl) {
@@ -1723,8 +1808,8 @@ function updateGridFocus() {
           
           let newOffset = currentOffset;
           
-          if (railData && (railData.card_type === "social_trending_shorts_rail" || railData.card_type === "short_video_news_grid")) {
-            // Shorts/News Grid: keep the focused card perfectly centered in the viewport
+          if (railData && (railData.card_type === "social_trending_shorts_rail" || railData.card_type === "short_video_news_grid" || railData.card_type === "live_tv_channel_rail")) {
+            // Tall/special rails: keep the focused card centered in the viewport
             newOffset = cardLeft - viewWidth / 2 + card.offsetWidth / 2;
           } else {
             // Standard rails: keep card within visible bounds
@@ -1772,6 +1857,8 @@ function updateGridFocus() {
       // Scroll so that the bottom is aligned with the viewport bottom, with some padding.
       const targetScroll = railBottom - containerHeight + 36;
       container.scrollTop = Math.max(railOffsetTop - 20, targetScroll);
+    } else if (railData && railData.card_type === "live_tv_channel_rail") {
+      container.scrollTop = Math.max(0, railOffsetTop);
     } else if (railData && railData.card_type === "originals_featured_showcase") {
       // Originals showcase is also tall (approx 430px). Let's align its top with less offset to keep it fully visible.
       container.scrollTop = Math.max(0, railOffsetTop - 10);
@@ -1816,66 +1903,54 @@ function handleGridFocusChange() {
     // Clear auto-hide timer on navigate
     clearTimeout(liveHideTimer);
     
-    const validRails = APP_STATE.homeData && Array.isArray(APP_STATE.homeData.rails)
-      ? APP_STATE.homeData.rails.filter(r => {
-          if (r.card_type === "live_tv_channel_rail") return false;
-          return (r.items || r.data || []).length > 0;
-        })
-      : [];
-    const currentRailData = validRails[activeRailIndex];
+    const renderRails = getHomeRenderRails();
+    const currentRailData = renderRails[activeRailIndex];
     const isLiveTVFocused = currentRailData && currentRailData.card_type === "live_tv_channel_rail";
     
     if (isLiveTVFocused) {
       // Focus is on the live TV rail
-      const liveRail = APP_STATE.homeData && Array.isArray(APP_STATE.homeData.rails)
-        ? APP_STATE.homeData.rails.find(r => r.card_type === "live_tv_channel_rail")
-        : null;
-        
+      const liveRail = currentRailData;
+      let activeCard = null;
+
       if (liveRail) {
         const items = liveRail.items || liveRail.data || [];
-        const activeCard = items[activeCardIndex];
-        if (activeCard) {
-          const backdrop = document.getElementById("home-bg-backdrop");
-          if (backdrop) {
-            backdrop.style.backgroundImage = `url('${activeCard.lg_poster_image || activeCard.poster_image}')`;
-            backdrop.style.opacity = "1";
-          }
-        }
+        activeCard = items[activeCardIndex] || null;
       }
-      
-      // Schedule auto-play after 10s
-      startLivePlayTimer();
-      
-      // If video was already playing, restart the 5s auto-hide timer
-      if (isLiveVideoPlaying) {
-        startLiveHideTimer();
+
+      if (activeCard) {
+        // Every Live TV focus move stops the current video, shows the new card image,
+        // then schedules playback for the newly focused item.
+        resetLivePlayer();
+        showHomeLiveBackdrop(liveRail, activeCard);
+        startLivePlayTimer(activeCard);
       }
     } else {
       // Focus moved away: stop HLS video playback completely
       resetLivePlayer();
+      hideHomeLiveBackdrop();
     }
   }
 }
 
 // Start the 10-second auto-play timer for the live TV channel rail
-function startLivePlayTimer() {
+function startLivePlayTimer(item) {
   clearTimeout(livePlayTimer);
-  
-  // Find the live rail
-  const liveRail = APP_STATE.homeData && Array.isArray(APP_STATE.homeData.rails) 
-    ? APP_STATE.homeData.rails.find(r => r.card_type === "live_tv_channel_rail")
-    : null;
-    
-  if (liveRail) {
-    const items = liveRail.items || liveRail.data || [];
-    const currentItem = items[activeCardIndex];
-    
-    if (currentItem && currentItem.video_url) {
-      console.log(`Live Player: Scheduling auto-play for ${currentItem.title} in 10s...`);
-      livePlayTimer = setTimeout(() => {
-        playLiveVideo(currentItem);
-      }, 10000);
-    }
+
+  let currentItem = item || null;
+
+  if (!currentItem) {
+    const liveRail = APP_STATE.homeData && Array.isArray(APP_STATE.homeData.rails)
+      ? APP_STATE.homeData.rails.find(r => r.card_type === "live_tv_channel_rail")
+      : null;
+    const items = liveRail ? (liveRail.items || liveRail.data || []) : [];
+    currentItem = items[activeCardIndex] || null;
+  }
+
+  if (currentItem && currentItem.video_url) {
+    console.log(`Live Player: Scheduling auto-play for ${currentItem.title} in 10s...`);
+    livePlayTimer = setTimeout(() => {
+      playLiveVideo(currentItem);
+    }, 10000);
   }
 }
 
@@ -1888,6 +1963,10 @@ function playLiveVideo(item) {
   resetLivePlayer();
   
   isLiveVideoPlaying = true;
+  const homeScreen = document.getElementById("home-screen");
+  if (homeScreen) {
+    homeScreen.classList.add("live-playing");
+  }
   videoEl.muted = isMuted;
   
   if (Hls.isSupported()) {
@@ -1916,10 +1995,12 @@ function playLiveVideo(item) {
   if (backdrop) {
     backdrop.style.opacity = "0"; // Fade out backdrop to reveal video
   }
+  videoEl.style.opacity = "1";
   
   const railsContainer = document.getElementById("home-rails-container");
   if (railsContainer) {
     railsContainer.classList.add("scrolled-down");
+    railsContainer.classList.remove("hidden-rails");
   }
   
   const controls = document.getElementById("live-player-controls");
@@ -1933,7 +2014,7 @@ function playLiveVideo(item) {
   if (fill) fill.style.width = "100%";
   if (knob) knob.style.left = "100%";
   
-  // Start the 5-second timer to auto-hide the row list
+  updatePlayerFocus();
   startLiveHideTimer();
 }
 
@@ -1943,12 +2024,17 @@ function resetLivePlayer() {
   clearTimeout(liveHideTimer);
   
   isLiveVideoPlaying = false;
+  const homeScreen = document.getElementById("home-screen");
+  if (homeScreen) {
+    homeScreen.classList.remove("live-playing");
+  }
   
   const videoEl = document.getElementById("live-video-element");
   if (videoEl) {
     videoEl.pause();
     videoEl.src = "";
     videoEl.removeAttribute("src");
+    videoEl.style.opacity = "0";
     videoEl.load();
   }
   
@@ -1960,7 +2046,7 @@ function resetLivePlayer() {
   // Restore backdrop
   const backdrop = document.getElementById("home-bg-backdrop");
   if (backdrop) {
-    backdrop.style.opacity = "1";
+    backdrop.style.opacity = isLiveTvRailFocused() ? "1" : "0";
   }
   
   // Restore rails position and visibility
@@ -1981,7 +2067,8 @@ function startLiveHideTimer() {
   clearTimeout(liveHideTimer);
   
   // Only start timer if focus is on grid, in the live rail, and video is playing
-  if (focusArea === "GRID" && activeRailIndex === 0 && isLiveVideoPlaying) {
+  const currentRail = getHomeRenderRails()[activeRailIndex];
+  if (focusArea === "GRID" && currentRail && currentRail.card_type === "live_tv_channel_rail" && isLiveVideoPlaying) {
     liveHideTimer = setTimeout(() => {
       hideRailsAndFocusControls();
     }, 5000);
@@ -2090,6 +2177,11 @@ const SEARCH_STATE = {
   resultIndex: 0,
   isShiftActive: false
 };
+const SEARCH_HISTORY_VISIBLE_LIMIT = 3;
+
+function getVisibleSearchHistoryCount() {
+  return Math.min(SEARCH_STATE.history.length, SEARCH_HISTORY_VISIBLE_LIMIT);
+}
 
 const KEYBOARD_ROWS = [
   ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -2222,7 +2314,7 @@ function renderHistoryChips() {
     return;
   }
   
-  SEARCH_STATE.history.forEach((item, idx) => {
+  SEARCH_STATE.history.slice(0, SEARCH_HISTORY_VISIBLE_LIMIT).forEach((item, idx) => {
     const chip = document.createElement("div");
     chip.className = "history-chip";
     chip.setAttribute("data-index", idx.toString());
@@ -2275,7 +2367,7 @@ function handleKeyboardKeyPress(key) {
       const cleanQ = SEARCH_STATE.query.trim();
       if (!SEARCH_STATE.history.includes(cleanQ)) {
         SEARCH_STATE.history.unshift(cleanQ);
-        if (SEARCH_STATE.history.length > 5) SEARCH_STATE.history.pop();
+        if (SEARCH_STATE.history.length > SEARCH_HISTORY_VISIBLE_LIMIT) SEARCH_STATE.history.pop();
         renderHistoryChips();
       }
       performSearch(cleanQ);
@@ -2313,6 +2405,7 @@ function handleKeyboardKeyPress(key) {
 async function performSearch(query) {
   const cleanQuery = query && query.trim() !== "" ? query.trim() : "";
   const endpointQuery = cleanQuery !== "" ? cleanQuery : "entertainment";
+  let apiResponded = false;
   
   // The exact request payload/headers from user's request
   try {
@@ -2342,6 +2435,7 @@ async function performSearch(query) {
     console.log("SEARCH LIVE FETCH:", url);
     const response = await fetch(url, requestOptions);
     if (response.ok) {
+      apiResponded = true;
       const json = await response.json();
       if (json && json.data && json.data.response) {
         let items = [];
@@ -2361,7 +2455,14 @@ async function performSearch(query) {
           renderSearchResults(items, cleanQuery, railTitle);
           return;
         }
+
+        renderSearchNoData(cleanQuery, railTitle);
+        return;
       }
+    }
+    if (apiResponded) {
+      renderSearchNoData(cleanQuery, "");
+      return;
     }
     throw new Error(`HTTP ${response.status}`);
   } catch (err) {
@@ -2405,8 +2506,7 @@ function renderSearchResults(items, query, railTitle) {
   if (!section || !title || !container) return;
   
   if (!items || items.length === 0) {
-    section.style.display = "none";
-    container.innerHTML = "";
+    renderSearchNoData(query, railTitle);
     return;
   }
   
@@ -2439,6 +2539,27 @@ function renderSearchResults(items, query, railTitle) {
   
   // If focus area is currently in results, update focus
   if (SEARCH_STATE.focusArea === "RESULTS") {
+    updateSearchFocus();
+  }
+}
+
+function renderSearchNoData(query, railTitle) {
+  SEARCH_STATE.results = [];
+
+  const section = document.getElementById("search-results-section");
+  const title = document.getElementById("search-results-title");
+  const container = document.getElementById("search-results-container");
+
+  if (!section || !title || !container) return;
+
+  const displayTitle = railTitle || (query ? `${query} Video List` : "Search Results");
+  title.innerText = `Results from "${displayTitle}"`;
+  container.innerHTML = `<div class="search-no-data">Data Not Found</div>`;
+  section.style.display = "block";
+
+  if (SEARCH_STATE.focusArea === "RESULTS") {
+    SEARCH_STATE.focusArea = "INPUT";
+    SEARCH_STATE.resultIndex = 0;
     updateSearchFocus();
   }
 }
@@ -2511,8 +2632,9 @@ function updateSearchFocus() {
         const offsetLeft = card.offsetLeft;
         const width = card.offsetWidth;
         const containerWidth = container.offsetWidth;
+        const targetScrollLeft = Math.max(0, offsetLeft - (containerWidth / 2) + (width / 2));
         container.scrollTo({
-          left: offsetLeft - (containerWidth / 2) + (width / 2),
+          left: targetScrollLeft,
           behavior: 'smooth'
         });
       }
@@ -2565,9 +2687,10 @@ function handleSearchScreenKey(key, event) {
         if (SEARCH_STATE.keyboardRow === 0) {
           SEARCH_STATE.focusArea = "INPUT";
         } else if (SEARCH_STATE.keyboardRow === 1 || SEARCH_STATE.keyboardRow === 2) {
-          if (SEARCH_STATE.history.length > 0) {
+          const visibleHistoryCount = getVisibleSearchHistoryCount();
+          if (visibleHistoryCount > 0) {
             SEARCH_STATE.focusArea = "HISTORY";
-            SEARCH_STATE.historyIndex = Math.min(SEARCH_STATE.historyIndex, SEARCH_STATE.history.length - 1);
+            SEARCH_STATE.historyIndex = Math.min(SEARCH_STATE.historyIndex, visibleHistoryCount - 1);
           } else {
             SEARCH_STATE.focusArea = "INPUT";
           }
@@ -2604,6 +2727,10 @@ function handleSearchScreenKey(key, event) {
         // Clamp column index
         const maxCol = KEYBOARD_ROWS[SEARCH_STATE.keyboardRow].length - 1;
         SEARCH_STATE.keyboardCol = Math.min(SEARCH_STATE.keyboardCol, maxCol);
+        updateSearchFocus();
+      } else if (SEARCH_STATE.results.length > 0) {
+        SEARCH_STATE.focusArea = "RESULTS";
+        SEARCH_STATE.resultIndex = 0;
         updateSearchFocus();
       }
     } else if (key === "Enter") {
@@ -2657,7 +2784,7 @@ function handleSearchScreenKey(key, event) {
       updateSearchFocus();
     } else if (key === "ArrowDown") {
       event.preventDefault();
-      if (SEARCH_STATE.history.length > 0) {
+      if (getVisibleSearchHistoryCount() > 0) {
         SEARCH_STATE.focusArea = "HISTORY";
         SEARCH_STATE.historyIndex = 0;
       } else if (SEARCH_STATE.results.length > 0) {
@@ -2692,7 +2819,8 @@ function handleSearchScreenKey(key, event) {
       updateSearchFocus();
     } else if (key === "ArrowDown") {
       event.preventDefault();
-      if (SEARCH_STATE.historyIndex < SEARCH_STATE.history.length - 1) {
+      const visibleHistoryCount = getVisibleSearchHistoryCount();
+      if (SEARCH_STATE.historyIndex < visibleHistoryCount - 1) {
         SEARCH_STATE.historyIndex++;
       } else if (SEARCH_STATE.results.length > 0) {
         SEARCH_STATE.focusArea = "RESULTS";
@@ -2715,9 +2843,10 @@ function handleSearchScreenKey(key, event) {
   else if (SEARCH_STATE.focusArea === "RESULTS") {
     if (key === "ArrowUp") {
       event.preventDefault();
-      if (SEARCH_STATE.history.length > 0) {
+      const visibleHistoryCount = getVisibleSearchHistoryCount();
+      if (visibleHistoryCount > 0) {
         SEARCH_STATE.focusArea = "HISTORY";
-        SEARCH_STATE.historyIndex = SEARCH_STATE.history.length - 1;
+        SEARCH_STATE.historyIndex = visibleHistoryCount - 1;
       } else {
         SEARCH_STATE.focusArea = "INPUT";
       }
@@ -2766,7 +2895,7 @@ async function openVideosScreen(menuItem) {
   
   const container = document.getElementById("videos-grid-container");
   if (container) {
-    container.innerHTML = `<div style="color: #888; font-size: 16px; width: 100%; grid-column: span 3; text-align: center; padding-top: 40px;">Loading videos...</div>`;
+    container.innerHTML = renderRedLoader(3);
   }
   
   VIDEOS_STATE.focusArea = "GRID";
@@ -2998,7 +3127,7 @@ async function openTVShowsScreen(menuItem) {
 
   const container = document.getElementById("tvshows-grid-container");
   if (container) {
-    container.innerHTML = `<div style="color:#888;font-size:16px;grid-column:span 3;text-align:center;padding-top:40px;">Loading TV Shows...</div>`;
+    container.innerHTML = renderRedLoader(3);
   }
 
   // Set dynamic screen title from menu item label
@@ -3192,7 +3321,7 @@ async function openShortVideosScreen(menuItem) {
 
   const container = document.getElementById("shortvideos-grid-container");
   if (container) {
-    container.innerHTML = `<div style="color:#888;font-size:16px;grid-column:span 5;text-align:center;padding-top:40px;">Loading Short Videos...</div>`;
+    container.innerHTML = renderRedLoader(5);
   }
 
   // Set dynamic screen title from menu item label
