@@ -544,7 +544,10 @@ body.tv-mode {
 #home-bg-backdrop,
 #live-video-element {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -561,7 +564,10 @@ body.tv-mode {
 #home-bg-backdrop::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background:
     linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.22) 46%, rgba(0, 0, 0, 0.98) 96%),
     linear-gradient(to right, rgba(0, 0, 0, 0.40) 0%, transparent 34%, rgba(0, 0, 0, 0.18) 100%);
@@ -578,7 +584,10 @@ body.tv-mode {
 #home-screen.live-playing::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 4;
   background:
     linear-gradient(to bottom, rgba(222, 238, 232, 0.34) 0%, rgba(167, 184, 178, 0.26) 54%, rgba(0, 0, 0, 0.86) 83%, #000 100%),
@@ -769,7 +778,10 @@ body.tv-mode {
 
 .live-tv-card-shade {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.68) 100%);
   pointer-events: none;
 }
@@ -787,7 +799,6 @@ body.tv-mode {
   bottom: 15px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   min-height: 34px;
   padding: 0 16px;
   border-radius: 18px;
@@ -798,6 +809,9 @@ body.tv-mode {
   letter-spacing: 0;
   line-height: 1;
   z-index: 2;
+}
+.live-tv-badge > * + * {
+  margin-left: 7px;
 }
 
 .live-tv-badge-icon {
@@ -863,7 +877,6 @@ body.tv-mode {
 /* Thumbnail fills the full card */
 .category-topic-thumbnail {
   width: 100%;
-  aspect-ratio: 14 / 9;
   height: 174px;
   position: relative;
   overflow: hidden;
@@ -1163,7 +1176,6 @@ position: absolute;
 /* Thumbnail container */
 .originals-ranked-thumb {
   width: 240px;
-  aspect-ratio: 16 / 9;
   height: 135px;
   border-radius: 10px;
   overflow: hidden;
@@ -1296,7 +1308,6 @@ position: absolute;
 .shorts-card {
   position: relative;
   width: 180px;
-  aspect-ratio: 9 / 16;
   height: 320px;
   border-radius: 16px;
   overflow: hidden;
@@ -1308,7 +1319,10 @@ position: absolute;
 
 .shorts-card > img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1548,7 +1562,6 @@ position: absolute;
 .news-grid-card {
   position: relative;
   width: 180px;
-  aspect-ratio: 9 / 16;
   height: 320px;
   border-radius: 16px;
   overflow: hidden;
@@ -1560,7 +1573,10 @@ position: absolute;
 
 .news-grid-card > img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1852,7 +1868,6 @@ position: absolute;
 
 .anchor-episode-thumb {
   width: 100%;
-  aspect-ratio: 16 / 9;
   height: 124px;
   border-radius: 12px;
   overflow: hidden;
@@ -1904,8 +1919,6 @@ position: absolute;
     z-index: 5;
     pointer-events: none;
       background-image: linear-gradient(to right, rgba(255,0,0,0), rgba(0,0,0,1));
-    /* -webkit-mask-image: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.15) 12%, #000 38%);
-    mask-image: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.15) 12%, #000 38%); */
 }
 
 .anchor-portrait-img {
@@ -1920,7 +1933,6 @@ position: absolute;
 
 .card-thumbnail-container {
   width: 100%;
-  aspect-ratio: 16 / 9;
   height: 194px;
   overflow: hidden;
   position: relative;
@@ -1992,7 +2004,6 @@ position: absolute;
 
 .show-card-poster {
   width: 100%;
-  aspect-ratio: 2 / 3;
   height: 270px;
   overflow: hidden;
   background: #282828;
@@ -2104,7 +2115,6 @@ position: absolute;
 }
 .hero-thumb {
   width: 100%;
-  aspect-ratio: 16 / 9;
   height: 101px;
   border-radius: 12px;
   overflow: hidden;
@@ -2613,7 +2623,6 @@ position: absolute;
 #search-results-container {
   display: flex !important;
   flex-direction: row !important;
-  gap: 20px !important;
   overflow-x: auto !important;
   margin-top: 10px !important;
   padding: 14px 18px 44px 18px !important;
@@ -2627,7 +2636,7 @@ position: absolute;
 }
 #search-results-container > * + * {
   margin-top: 0 !important;
-  margin-left: 0 !important;
+  margin-left: 20px !important;
 }
 
 .search-no-data {
@@ -3359,8 +3368,10 @@ position: absolute;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
   margin-top: 16px;
+}
+.search-history-container > * + * {
+  margin-top: 10px;
 }
 .history-chip {
   display: flex;
@@ -3375,7 +3386,7 @@ position: absolute;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s ease;
-  width: fit-content;
+  width: auto;
   box-sizing: border-box;
 }
 .history-chip.focused {
@@ -3388,11 +3399,13 @@ position: absolute;
 .search-results-row {
   display: flex;
   flex-direction: row;
-  gap: 16px;
   overflow-x: auto;
   padding: 10px 0;
   width: 100%;
   scrollbar-width: none; /* Firefox */
+}
+.search-results-row > * + * {
+  margin-left: 16px;
 }
 .search-results-row::-webkit-scrollbar {
   display: none; /* Safari and Chrome */
@@ -3479,7 +3492,7 @@ position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  width: 130px;
   border: 1.5px solid rgba(255, 255, 255, 0.4);
   border-radius: 20px;
   padding: 8px 16px;
@@ -3507,7 +3520,7 @@ position: absolute;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 157px;
-  gap: 20px;
+  grid-gap: 20px;
   align-content: start;
   height: 390px;
   overflow-y: auto;
@@ -3613,7 +3626,7 @@ position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  width: 130px;
   border: 1.5px solid rgba(255, 255, 255, 0.4);
   border-radius: 20px;
   padding: 8px 16px;
@@ -3621,7 +3634,9 @@ position: absolute;
   cursor: pointer;
   transition: all 0.18s ease;
   margin-bottom: 20px;
-  gap: 6px;
+}
+.generic-back-btn > * + * {
+  margin-left: 6px;
 }
 .generic-back-btn.focused {
   background: #ffffff;
@@ -3646,7 +3661,8 @@ position: absolute;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 172px;
-  gap: 16px 20px;
+  grid-row-gap: 16px;
+  grid-column-gap: 20px;
   align-content: start;
   height: 370px;
   overflow-y: auto;
@@ -3681,7 +3697,7 @@ position: absolute;
 .tvshow-card-thumb {
   position: relative;
   width: 100%;
-  aspect-ratio: 19/9;
+  height: 134px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -3712,7 +3728,7 @@ position: absolute;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-auto-rows: 260px;
-  gap: 14px;
+  grid-gap: 14px;
   align-content: start;
   height: 400px;
   overflow-y: auto;
