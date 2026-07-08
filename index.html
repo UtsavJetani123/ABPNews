@@ -55,8 +55,8 @@
     </div>
   </div>
 
-  <!-- Home Screen -->
-  <div id="home-screen" class="screen-view">
+  <!-- Global Sidebar Wrapper -->
+  <div id="global-sidebar-container" style="display: none;">
     <!-- Menu Pill (Top-left button when drawer is collapsed to 0) -->
     <div id="menu-pill" class="hidden">
       <!-- Back Chevron Arrow -->
@@ -84,7 +84,10 @@
       <div class="drawer-menu-items top-items" id="drawer-top-menu"></div>
       <div class="drawer-menu-items bottom-items" id="drawer-bottom-menu"></div>
     </div>
+  </div>
 
+  <!-- Home Screen -->
+  <div id="home-screen" class="screen-view">
     <!-- Background Watermark ABP NEWS TV LIVE -->
     <div class="hero-watermark" id="home-bg-watermark" style="opacity: 0.12; z-index: 3;">
       <img class="watermark-logo" id="home-watermark-logo" src="" alt="ABP Logo" style="filter: brightness(0) invert(1); width: 80px; height: 80px; object-fit: contain; margin-right: 12px;">
@@ -112,6 +115,102 @@
 
       <!-- Home Rails Scroll Area -->
       <div id="home-rails-container"></div>
+    </div>
+  </div>
+
+  <!-- Search Screen -->
+  <div id="search-screen" class="screen-view">
+    <div class="search-layout-container">
+      
+      <!-- Left Panel: Top Nav Row (Back, Profile, Search bar capsule, Voice button) -->
+      <div class="search-left-panel">
+        
+        <!-- Top bar containing Back arrow and Input capsule -->
+        <div class="search-input-wrapper">
+          <div id="search-back-btn" class="search-back-arrow-wrapper">
+            <svg class="search-back-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </div>
+          <div class="search-bar" id="search-bar-input-field">
+            <span class="search-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <div id="search-query-display" class="search-placeholder">Search for shows, videos...</div>
+          </div>
+        </div>
+
+        <!-- Suggestions/History Chips -->
+        <div id="search-suggestions-container" class="search-history-container">
+          <!-- Dynamically populated in JavaScript -->
+        </div>
+
+      </div>
+
+      <!-- Right Panel: On-Screen Keyboard -->
+      <div class="search-right-panel">
+        <div id="tv-keyboard">
+          <!-- Dynamically populated in JavaScript -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Search Results heading and row underneath both panels -->
+    <div id="search-results-section" style="margin-top: 8px; padding: 0 28px 28px 28px; display: none; width: 100%; box-sizing: border-box;">
+      <div id="search-results-title" style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px; letter-spacing: 0.5px;"></div>
+      <div id="search-results-container" class="search-results-row"></div>
+    </div>
+  </div>
+
+  <!-- Videos Screen -->
+  <div id="videos-screen" class="screen-view">
+    <div class="videos-layout-container">
+      <div id="videos-back-btn" class="videos-back-btn">
+        <svg class="videos-back-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Go Back</span>
+      </div>
+      <div class="videos-screen-title">Videos</div>
+      <div id="videos-grid-container" class="videos-grid-scroll-inner">
+        <!-- Dynamically populated from API -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TV Shows Screen -->
+  <div id="tvshows-screen" class="screen-view">
+    <div class="generic-list-layout">
+      <div id="tvshows-back-btn" class="generic-back-btn">
+        <svg class="generic-back-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Go Back</span>
+      </div>
+      <div class="generic-screen-title">TV Shows</div>
+      <div id="tvshows-grid-container" class="tvshows-grid-scroll-inner">
+        <!-- Dynamically populated from API -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Short Videos Screen -->
+  <div id="shortvideos-screen" class="screen-view">
+    <div class="generic-list-layout">
+      <div id="shortvideos-back-btn" class="generic-back-btn">
+        <svg class="generic-back-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Go Back</span>
+      </div>
+      <div class="generic-screen-title">Short Videos</div>
+      <div id="shortvideos-grid-container" class="shortvideos-grid-scroll-inner">
+        <!-- Dynamically populated from API -->
+      </div>
     </div>
   </div>
 
