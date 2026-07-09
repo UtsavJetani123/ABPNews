@@ -511,7 +511,7 @@ body.tv-mode {
 }
 
 .card-focus-wrapper.focused {
-  transform: scale(1.12); /* Zoom the focused card */
+  transform: scale(1.1); /* Zoom the focused card */
   z-index: 10;            /* Elevate above neighboring cards */
 }
 
@@ -544,7 +544,10 @@ body.tv-mode {
 #home-bg-backdrop,
 #live-video-element {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -561,7 +564,10 @@ body.tv-mode {
 #home-bg-backdrop::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background:
     linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.22) 46%, rgba(0, 0, 0, 0.98) 96%),
     linear-gradient(to right, rgba(0, 0, 0, 0.40) 0%, transparent 34%, rgba(0, 0, 0, 0.18) 100%);
@@ -578,7 +584,10 @@ body.tv-mode {
 #home-screen.live-playing::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 4;
   background:
     linear-gradient(to bottom, rgba(222, 238, 232, 0.34) 0%, rgba(167, 184, 178, 0.26) 54%, rgba(0, 0, 0, 0.86) 83%, #000 100%),
@@ -755,9 +764,10 @@ body.tv-mode {
   border-radius: 14px;
   overflow: hidden;
   background: #111;
-  border: 1.6px solid rgba(255, 255, 255, 0.22);
+  border: 3px solid rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  padding: 3px;
 }
 
 .live-tv-card img {
@@ -765,20 +775,21 @@ body.tv-mode {
   height: 100%;
   display: block;
   object-fit: cover;
+  border-radius: 9px;
 }
 
 .live-tv-card-shade {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.68) 100%);
   pointer-events: none;
 }
 
 .live-tv-card-wrapper.focused .live-tv-card {
   border-color: #ffffff;
-  box-shadow:
-    0 0 0 3px #ffffff,
-    0 10px 28px rgba(0, 0, 0, 0.78);
 }
 
 .live-tv-badge {
@@ -787,7 +798,6 @@ body.tv-mode {
   bottom: 15px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   min-height: 34px;
   padding: 0 16px;
   border-radius: 18px;
@@ -798,6 +808,9 @@ body.tv-mode {
   letter-spacing: 0;
   line-height: 1;
   z-index: 2;
+}
+.live-tv-badge > * + * {
+  margin-left: 7px;
 }
 
 .live-tv-badge-icon {
@@ -848,11 +861,12 @@ body.tv-mode {
   flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;
-  border: 2.5px solid transparent;
+  border: 3px solid transparent;
   background: #111;
   position: relative;
   transition: border-color 0.18s ease;
   cursor: pointer;
+  padding: 3px;
 }
 
 /* Scale on focus is handled by .card-focus-wrapper.focused (existing rule) */
@@ -863,12 +877,12 @@ body.tv-mode {
 /* Thumbnail fills the full card */
 .category-topic-thumbnail {
   width: 100%;
-  aspect-ratio: 14 / 9;
   height: 174px;
   position: relative;
   overflow: hidden;
   background: #1a1a1a;
   display: block;
+    border-radius: 9px;
 }
 
 .category-topic-thumbnail img {
@@ -1163,7 +1177,6 @@ position: absolute;
 /* Thumbnail container */
 .originals-ranked-thumb {
   width: 240px;
-  aspect-ratio: 16 / 9;
   height: 135px;
   border-radius: 10px;
   overflow: hidden;
@@ -1268,9 +1281,6 @@ position: absolute;
   will-change: transform;
   transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.shorts-scroll-inner > * + * {
-  margin-left: 14px;
-}
 
 /* card-focus-wrapper for shorts (no default scale from the global rule) */
 .shorts-scroll-inner .card-focus-wrapper {
@@ -1296,31 +1306,32 @@ position: absolute;
 .shorts-card {
   position: relative;
   width: 180px;
-  aspect-ratio: 9 / 16;
   height: 320px;
   border-radius: 16px;
   overflow: hidden;
   background: #111;
   flex-shrink: 0;
-  border: 2.5px solid transparent;
+  border: 3px solid transparent;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .shorts-card > img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  padding: 3px;
+  border-radius: 18px;
 }
 
 /* Focused card: white phone-frame border + glow */
 .shorts-scroll-inner .card-focus-wrapper.focused .shorts-card {
   border-color: #ffffff;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,0.45),
-    0 8px 32px rgba(0,0,0,0.7);
   border-radius: 18px;
 }
 
@@ -1548,31 +1559,32 @@ position: absolute;
 .news-grid-card {
   position: relative;
   width: 180px;
-  aspect-ratio: 9 / 16;
   height: 320px;
   border-radius: 16px;
   overflow: hidden;
   background: #111;
   flex-shrink: 0;
-  border: 2.5px solid transparent;
+  border: 3px solid transparent;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .news-grid-card > img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  padding: 3px;
+  border-radius: 18px;
 }
 
 /* Focused card frame styling */
 .news-grid-scroll-inner .card-focus-wrapper.focused .news-grid-card {
   border-color: #ffffff;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,0.45),
-    0 8px 32px rgba(0,0,0,0.7);
   border-radius: 18px;
 }
 
@@ -1852,11 +1864,10 @@ position: absolute;
 
 .anchor-episode-thumb {
   width: 100%;
-  aspect-ratio: 16 / 9;
   height: 124px;
   border-radius: 12px;
   overflow: hidden;
-  border: 2.5px solid transparent;
+  border: 3px solid transparent;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -1865,6 +1876,8 @@ position: absolute;
   height: 100%;
   object-fit: cover;
   display: block;
+  padding: 3px;
+  border-radius: 9px;
 }
 
 .anchor-episode-wrapper.focused .anchor-episode-thumb {
@@ -1904,8 +1917,6 @@ position: absolute;
     z-index: 5;
     pointer-events: none;
       background-image: linear-gradient(to right, rgba(255,0,0,0), rgba(0,0,0,1));
-    /* -webkit-mask-image: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.15) 12%, #000 38%);
-    mask-image: linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.15) 12%, #000 38%); */
 }
 
 .anchor-portrait-img {
@@ -1920,7 +1931,6 @@ position: absolute;
 
 .card-thumbnail-container {
   width: 100%;
-  aspect-ratio: 16 / 9;
   height: 194px;
   overflow: hidden;
   position: relative;
@@ -1992,7 +2002,6 @@ position: absolute;
 
 .show-card-poster {
   width: 100%;
-  aspect-ratio: 2 / 3;
   height: 270px;
   overflow: hidden;
   background: #282828;
@@ -2104,7 +2113,6 @@ position: absolute;
 }
 .hero-thumb {
   width: 100%;
-  aspect-ratio: 16 / 9;
   height: 101px;
   border-radius: 12px;
   overflow: hidden;
@@ -2416,9 +2424,10 @@ position: absolute;
 
 .search-layout-container {
   display: flex;
-  padding: 24px 28px;
+  padding: 24px 28px 0 34px;
   width: 100%;
   box-sizing: border-box;
+  overflow: visible;
 }
 .search-layout-container > * + * {
   margin-left: 32px;
@@ -2428,6 +2437,9 @@ position: absolute;
   width: 350px;
   display: flex;
   flex-direction: column;
+  padding-left: 8px;
+  box-sizing: border-box;
+  overflow: visible;
 }
 .search-left-panel > * + * {
   margin-top: 20px;
@@ -2610,24 +2622,32 @@ position: absolute;
 }
 
 /* Search results rails */
+#search-results-section {
+  margin-top: 8px;
+  padding: 0 28px 28px 34px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
 #search-results-container {
   display: flex !important;
   flex-direction: row !important;
-  gap: 20px !important;
   overflow-x: auto !important;
   margin-top: 10px !important;
-  padding: 14px 18px 44px 18px !important;
-  width: calc(100% + 36px) !important;
-  margin-left: -18px !important;
+  padding: 18px 22px 48px 22px !important;
+  width: 100% !important;
+  margin-left: 0 !important;
   scrollbar-width: none !important;
-  scroll-padding-left: 18px;
+  scroll-padding-left: 22px;
+  box-sizing: border-box;
 }
 #search-results-container::-webkit-scrollbar {
   display: none !important;
 }
 #search-results-container > * + * {
   margin-top: 0 !important;
-  margin-left: 0 !important;
+  margin-left: 20px !important;
 }
 
 .search-no-data {
@@ -3275,18 +3295,20 @@ position: absolute;
   height: 150px;
   background: var(--card-bg);
   border-radius: 12px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
   display: flex;
   flex-direction: column;
+  padding: 3px;
 }
 
 .popular-show-card-image {
   height: 106px;
   width: 100%;
   overflow: hidden;
+  border-radius: 9px 9px 0px 0px;
 }
 .popular-show-card-image img {
   width: 100%;
@@ -3305,6 +3327,7 @@ position: absolute;
   font-size: 12px;
   font-weight: 700;
   box-sizing: border-box;
+  border-radius: 0px 0px 9px 9px;
 }
 
 .card-focus-wrapper.focused .popular-show-card {
@@ -3359,8 +3382,13 @@ position: absolute;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
   margin-top: 16px;
+  padding-left: 6px;
+  padding-bottom: 4px;
+  overflow: visible;
+}
+.search-history-container > * + * {
+  margin-top: 10px;
 }
 .history-chip {
   display: flex;
@@ -3375,7 +3403,7 @@ position: absolute;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s ease;
-  width: fit-content;
+  width: auto;
   box-sizing: border-box;
 }
 .history-chip.focused {
@@ -3388,11 +3416,14 @@ position: absolute;
 .search-results-row {
   display: flex;
   flex-direction: row;
-  gap: 16px;
   overflow-x: auto;
-  padding: 10px 0;
+  padding: 18px 22px 48px 22px;
   width: 100%;
   scrollbar-width: none; /* Firefox */
+  box-sizing: border-box;
+}
+.search-results-row > * + * {
+  margin-left: 16px;
 }
 .search-results-row::-webkit-scrollbar {
   display: none; /* Safari and Chrome */
@@ -3400,26 +3431,27 @@ position: absolute;
 
 .search-card-wrapper {
   position: relative;
-  width: 260px;
-  height: 146px;
-  border-radius: 14px;
+  width: 246px;
+  height: 138px;
+  border-radius: 10px;
   overflow: hidden;
   border: 3px solid transparent;
   transition: all 0.2s ease;
   background: #1a1a1a;
   flex-shrink: 0;
   cursor: pointer;
+  padding: 3px;
 }
 .search-card-wrapper.focused {
   border-color: #ffffff;
-  transform: scale(1.05);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
+  transform: scale(1.03);
   z-index: 5;
 }
 .search-card-wrapper img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 7px;
 }
 .search-card-live-tag {
   position: absolute;
@@ -3479,7 +3511,7 @@ position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  width: 130px;
   border: 1.5px solid rgba(255, 255, 255, 0.4);
   border-radius: 20px;
   padding: 8px 16px;
@@ -3504,14 +3536,12 @@ position: absolute;
   margin-bottom: 24px;
 }
 .videos-grid-scroll-inner {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 157px;
-  gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
   align-content: start;
   height: 390px;
   overflow-y: auto;
-  padding: 15px 10px 45px 10px;
+  padding: 15px 0 45px 10px;
   margin-left: -10px;
   margin-right: -10px;
   box-sizing: border-box;
@@ -3527,22 +3557,25 @@ position: absolute;
   background: #111111;
   border-radius: 12px;
   overflow: hidden;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   transition: all 0.18s ease;
   cursor: pointer;
-  width: 100%;
+  width: 276px;
   height: 157px;
   box-sizing: border-box;
+  margin-right: 16px;
+  margin-bottom: 20px;
+  padding: 3px;
 }
 .video-grid-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+   border-radius: 9px;
 }
 .video-grid-card.focused {
   border-color: #ffffff;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
   z-index: 10;
 }
 .video-duration-badge {
@@ -3613,7 +3646,7 @@ position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  width: 130px;
   border: 1.5px solid rgba(255, 255, 255, 0.4);
   border-radius: 20px;
   padding: 8px 16px;
@@ -3621,7 +3654,9 @@ position: absolute;
   cursor: pointer;
   transition: all 0.18s ease;
   margin-bottom: 20px;
-  gap: 6px;
+}
+.generic-back-btn > * + * {
+  margin-left: 6px;
 }
 .generic-back-btn.focused {
   background: #ffffff;
@@ -3636,21 +3671,19 @@ position: absolute;
   font-size: 28px;
   font-weight: 800;
   color: #ffffff;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 /* =====================================================
    TV Shows — 3-column landscape grid with title below
    ===================================================== */
 .tvshows-grid-scroll-inner {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 172px;
-  gap: 16px 20px;
+  display: flex;
+  flex-wrap: wrap;
   align-content: start;
   height: 370px;
   overflow-y: auto;
-  padding: 10px 10px 45px 10px;
+  padding: 10px 0 45px 10px;
   margin-left: -10px;
   margin-right: -10px;
   box-sizing: border-box;
@@ -3665,23 +3698,26 @@ position: absolute;
   background: #111111;
   border-radius: 10px;
   overflow: hidden;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   transition: all 0.18s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: 276px;
+  height: 172px;
   box-sizing: border-box;
+  margin-right: 16px;
+  margin-bottom: 16px;
+  padding: 3px;
 }
 .tvshow-card.focused {
   border-color: #ffffff;
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
   z-index: 10;
 }
 .tvshow-card-thumb {
   position: relative;
   width: 100%;
-  aspect-ratio: 19/9;
+  height: 134px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -3690,6 +3726,7 @@ position: absolute;
   height: 100%;
   object-fit: cover;
   display: block;
+    border-radius: 7px 7px 0 0;
 }
 .tvshow-card-title {
   padding: 8px 10px 10px;
@@ -3709,14 +3746,12 @@ position: absolute;
    Short Videos — 5-column portrait (9:16) grid
    ===================================================== */
 .shortvideos-grid-scroll-inner {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-auto-rows: 260px;
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
   align-content: start;
   height: 400px;
   overflow-y: auto;
-  padding: 10px 10px 45px 10px;
+  padding: 10px 0 45px 10px;
   margin-left: -10px;
   margin-right: -10px;
   box-sizing: border-box;
@@ -3731,16 +3766,18 @@ position: absolute;
   background: #111111;
   border-radius: 10px;
   overflow: hidden;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   transition: all 0.18s ease;
   cursor: pointer;
-  width: 100%;
+  width: 160px;
   height: 260px;
   box-sizing: border-box;
+  margin-right: 10px;
+  margin-bottom: 14px;
+  padding: 3px;
 }
 .shortvideo-card.focused {
   border-color: #ffffff;
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
   z-index: 10;
 }
 .shortvideo-card img {
@@ -3748,6 +3785,7 @@ position: absolute;
   height: 100%;
   object-fit: cover;
   display: block;
+    border-radius: 7px;
 }
 .shortvideo-badge {
   position: absolute;

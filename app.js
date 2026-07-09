@@ -2,8 +2,9 @@
  * ABP TV Web Application - Splash Screen, Language Selection & Home Feed
  */
 
-// Polyfill for AbortController in older TV browser engines (e.g. webOS 3.x/4.x/5.x)
-if (typeof AbortController === "undefined") {
+// Track native AbortController support. Older webOS fetch rejects fake AbortSignal objects.
+var HAS_NATIVE_ABORT_CONTROLLER = typeof window.AbortController === "function";
+if (!HAS_NATIVE_ABORT_CONTROLLER) {
   window.AbortController = function() {
     this.signal = {};
     this.abort = function() {};
@@ -108,27 +109,71 @@ function getOrGenerateDeviceUuid() {
   return APP_STATE.deviceId;
 }
 
-// Calculate HMAC SHA-256 using SubtleCrypto
+// Pure-JS SHA-256 (fallback for webOS file:// where SubtleCrypto is unavailable)
+var _sha256 = (function() {
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+            0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+            0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+            0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+            0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+            0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+            0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+            0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  function rotr(x,n){return (x>>>n)|(x<<(32-n));}
+  function hash(bytes) {
+    var h=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    var len=bytes.length, padded=[];
+    for(var i=0;i<len;i++) padded.push(bytes[i]);
+    padded.push(0x80);
+    while((padded.length%64)!==56) padded.push(0);
+    var bits=len*8;
+    for(var s=56;s>=0;s-=8) padded.push((bits/Math.pow(2,s))&0xff);
+    for(var b=0;b<padded.length;b+=64){
+      var w=[];
+      for(var j=0;j<16;j++) w.push((padded[b+j*4]<<24)|(padded[b+j*4+1]<<16)|(padded[b+j*4+2]<<8)|padded[b+j*4+3]);
+      for(var j=16;j<64;j++){var s0=rotr(w[j-15],7)^rotr(w[j-15],18)^(w[j-15]>>>3);var s1=rotr(w[j-2],17)^rotr(w[j-2],19)^(w[j-2]>>>10);w.push((w[j-16]+s0+w[j-7]+s1)>>>0);}
+      var a=h[0],bv=h[1],c=h[2],d=h[3],e=h[4],f=h[5],g=h[6],hh=h[7];
+      for(var j=0;j<64;j++){var S1=rotr(e,6)^rotr(e,11)^rotr(e,25);var ch=(e&f)^(~e&g);var temp1=(hh+S1+ch+K[j]+w[j])>>>0;var S0=rotr(a,2)^rotr(a,13)^rotr(a,22);var maj=(a&bv)^(a&c)^(bv&c);var temp2=(S0+maj)>>>0;hh=g;g=f;f=e;e=(d+temp1)>>>0;d=c;c=bv;bv=a;a=(temp1+temp2)>>>0;}
+      h[0]=(h[0]+a)>>>0;h[1]=(h[1]+bv)>>>0;h[2]=(h[2]+c)>>>0;h[3]=(h[3]+d)>>>0;h[4]=(h[4]+e)>>>0;h[5]=(h[5]+f)>>>0;h[6]=(h[6]+g)>>>0;h[7]=(h[7]+hh)>>>0;
+    }
+    return h;
+  }
+  function strToBytes(s){var b=[];for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);if(c<0x80){b.push(c);}else if(c<0x800){b.push(0xc0|(c>>6),0x80|(c&0x3f));}else{b.push(0xe0|(c>>12),0x80|((c>>6)&0x3f),0x80|(c&0x3f));}}return b;}
+  function xorBytes(a,x){return a.map(function(v){return v^x;});}
+  return function hmac(key, msg) {
+    var keyBytes=strToBytes(key);
+    if(keyBytes.length>64){var hk=hash(keyBytes);keyBytes=hk.reduce(function(acc,v){return acc.concat([(v>>>24)&0xff,(v>>>16)&0xff,(v>>>8)&0xff,v&0xff]);},[]);}
+    while(keyBytes.length<64) keyBytes.push(0);
+    var ipad=xorBytes(keyBytes,0x36), opad=xorBytes(keyBytes,0x5c);
+    var inner=hash(ipad.concat(strToBytes(msg)));
+    var innerBytes=inner.reduce(function(acc,v){return acc.concat([(v>>>24)&0xff,(v>>>16)&0xff,(v>>>8)&0xff,v&0xff]);}, []);
+    var outer=hash(opad.concat(innerBytes));
+    return outer.map(function(v){return ('00000000'+v.toString(16)).slice(-8);}).join('');
+  };
+})();
+
+// Calculate HMAC SHA-256 — uses SubtleCrypto when available, falls back to pure-JS (webOS file:// context)
 async function computeHMACSignature(timestamp, payload, secret) {
+  const message = `${timestamp}.${payload}`;
+  // Use SubtleCrypto if available (modern browsers / HTTPS)
+  if (window.crypto && window.crypto.subtle) {
+    try {
+      const encoder = new TextEncoder();
+      const cryptoKey = await window.crypto.subtle.importKey(
+        "raw", encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+      );
+      const signatureBuffer = await window.crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
+      return Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (err) {
+      console.warn("SubtleCrypto HMAC failed, falling back to pure-JS:", err);
+    }
+  }
+  // Pure-JS fallback (works on webOS file:// where SubtleCrypto is unavailable)
   try {
-    const message = `${timestamp}.${payload}`;
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const messageData = encoder.encode(message);
-    
-    const cryptoKey = await window.crypto.subtle.importKey(
-      "raw", 
-      keyData, 
-      { name: "HMAC", hash: "SHA-256" }, 
-      false, 
-      ["sign"]
-    );
-    
-    const signatureBuffer = await window.crypto.subtle.sign("HMAC", cryptoKey, messageData);
-    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-    return signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return _sha256(secret, message);
   } catch (err) {
-    console.error("HMAC signature generation failed:", err);
+    console.error("Pure-JS HMAC also failed:", err);
     return "";
   }
 }
@@ -181,13 +226,20 @@ async function fetchSigned(endpoint, method = "GET", bodyPayload = null, skipAut
   const payloadStr = bodyPayload ? (typeof bodyPayload === "string" ? bodyPayload : JSON.stringify(bodyPayload)) : "";
   const signature = await computeHMACSignature(timestamp, payloadStr, APP_STATE.hmacSecret);
   
+  // Set platform header — webOS/LG TV requires "webos" platform identifier
   const headers = {
     "X-Device-ID": getOrGenerateDeviceUuid(),
-    "X-Platform": "android_tv",
+    "X-Platform": "webos",
     "X-App-Version": "1.0.0",
-    "X-Request-ID": requestId,
-    "Content-Type": "application/json"
+    "X-Request-ID": requestId
   };
+
+  // Only add Content-Type for requests that carry a body (POST/PUT/PATCH)
+  // Sending Content-Type on GET requests causes failures on webOS and some CORS preflight rejections
+  const hasBody = (method === "POST" || method === "PUT" || method === "PATCH");
+  if (hasBody) {
+    headers["Content-Type"] = "application/json";
+  }
   
   if (signature) {
     headers["X-Timestamp"] = timestamp.toString();
@@ -198,28 +250,47 @@ async function fetchSigned(endpoint, method = "GET", bodyPayload = null, skipAut
     headers["Authorization"] = `Bearer ${APP_STATE.deviceToken}`;
   }
   
-  const controller = new AbortController();
-  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:";
-  const timeoutLimit = isLocalhost ? 60000 : 15000; // 60s for local testing/debugging, 15s for production TV device
-  const timeoutId = setTimeout(() => controller.abort(), timeoutLimit);
-  
+  // On LG TV the app runs from file:// — give it a reasonable 30s timeout (not 60s),
+  // while localhost dev server gets 60s and a remote server would get 15s.
+  const isLocalhostDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const isFileProtocol = window.location.protocol === "file:";
+  const timeoutLimit = isLocalhostDev ? 60000 : (isFileProtocol ? 30000 : 15000);
+
   const options = {
-    method,
-    headers,
-    signal: controller.signal
+    method: method,
+    headers: headers
   };
+
+  var controller = null;
+  var timeoutId = null;
+  if (HAS_NATIVE_ABORT_CONTROLLER) {
+    controller = new AbortController();
+    options.signal = controller.signal;
+    timeoutId = setTimeout(function() { controller.abort(); }, timeoutLimit);
+  }
   
-  if (bodyPayload !== null && bodyPayload !== undefined) {
-    options.body = payloadStr;
-  } else if (method === "POST" || method === "PUT") {
-    options.body = "";
+  // Only attach body for methods that support it — never set body on GET/HEAD/DELETE
+  if (hasBody) {
+    options.body = payloadStr || "";
   }
   
   const url = `${APP_STATE.baseUrl}${endpoint}`;
   console.log(`API FETCH: ${url} (offset: ${serverTimeOffset}s, retry: ${retryCount})`);
   
   try {
-    const response = await fetch(url, options);
+    var response;
+    if (HAS_NATIVE_ABORT_CONTROLLER) {
+      response = await fetch(url, options);
+    } else {
+      response = await Promise.race([
+        fetch(url, options),
+        new Promise(function(resolve, reject) {
+          timeoutId = setTimeout(function() {
+            reject(new Error("Fetch timeout"));
+          }, timeoutLimit);
+        })
+      ]);
+    }
     clearTimeout(timeoutId);
     
     // Automatically correct client-server clock skew if signature/request expired fails
@@ -316,21 +387,33 @@ function getItemImageUrl(item, layoutType) {
 
   const landscapeKeys = [
     "thumbnail_image",
+    "lg_thumbnail_image",
+    "thumbnail",
     "image_url",
     "image",
+    "image_16_9",
+    "landscape_image",
+    "horizontal_image",
     "poster_image",
     "lg_poster_image",
+    "poster",
     "banner_image",
-    "hero_image"
+    "hero_image",
+    "feed_image"
   ];
   const portraitKeys = [
     "poster_image",
     "lg_poster_image",
+    "poster",
     "thumbnail_image",
+    "lg_thumbnail_image",
+    "thumbnail",
     "image_url",
     "image",
     "vertical_image",
-    "portrait_image"
+    "portrait_image",
+    "image_9_16",
+    "feed_image"
   ];
   const keys = layoutType === "portrait" ? portraitKeys : landscapeKeys;
 
@@ -344,11 +427,70 @@ function getItemImageUrl(item, layoutType) {
   return "assets/placeholder.png";
 }
 
+function buildImageTag(src, alt, className) {
+  const safeSrc = src || "assets/placeholder.png";
+  const safeAlt = alt || "";
+  const classAttr = className ? ` class="${className}"` : "";
+  return `<img${classAttr} src="${safeSrc}" alt="${safeAlt}" onerror="this.onerror=null;this.src='assets/placeholder.png';">`;
+}
+
+function safeScrollIntoView(el) {
+  if (!el || typeof el.scrollIntoView !== "function") return;
+  try {
+    el.scrollIntoView(false);
+  } catch (err) {
+    try {
+      el.scrollIntoView();
+    } catch (ignore) {}
+  }
+}
+
+function safeFocusElement(el) {
+  if (!el || typeof el.focus !== "function") return;
+  try {
+    el.focus({ preventScroll: true });
+  } catch (err) {
+    try {
+      el.focus();
+    } catch (ignore) {}
+  }
+}
+
+function scrollHorizontalItemIntoView(container, item) {
+  if (!container || !item) return;
+  if (item.getAttribute("data-index") === "0") {
+    container.scrollLeft = 0;
+    return;
+  }
+
+  const itemLeft = item.offsetLeft;
+  const itemRight = itemLeft + item.offsetWidth;
+  const viewLeft = container.scrollLeft;
+  const viewRight = viewLeft + container.clientWidth;
+  let nextScrollLeft = viewLeft;
+
+  if (itemLeft < viewLeft + 18) {
+    nextScrollLeft = Math.max(0, itemLeft - 18);
+  } else if (itemRight > viewRight - 18) {
+    nextScrollLeft = itemRight - container.clientWidth + 18;
+  }
+
+  container.scrollLeft = nextScrollLeft < 24 ? 0 : Math.max(0, nextScrollLeft);
+}
+
 function extractPaginatedItems(json, screenName) {
   const parsedItems = parseItemsFromResponse(json, screenName);
   if (parsedItems.length > 0) {
     if (parsedItems[0] && Array.isArray(parsedItems[0].data)) {
-      return parsedItems.flatMap(rail => Array.isArray(rail.data) ? rail.data : []);
+      const nestedItems = [];
+      parsedItems.forEach(function(rail) {
+        if (rail && Array.isArray(rail.data)) {
+          rail.data.forEach(function(item) {
+            nestedItems.push(item);
+          });
+        }
+      });
+      return nestedItems;
     }
     return parsedItems;
   }
@@ -356,7 +498,44 @@ function extractPaginatedItems(json, screenName) {
   const rails = json && json.data && json.data.response && Array.isArray(json.data.response.rails)
     ? json.data.response.rails
     : [];
-  return rails.flatMap(rail => Array.isArray(rail.data) ? rail.data : []);
+  const railItems = [];
+  rails.forEach(function(rail) {
+    if (rail && Array.isArray(rail.data)) {
+      rail.data.forEach(function(item) {
+        railItems.push(item);
+      });
+    }
+  });
+  return railItems;
+}
+
+function getHomeFallbackItemsForScreen(screenType) {
+  const rails = APP_STATE.homeData && Array.isArray(APP_STATE.homeData.rails) ? APP_STATE.homeData.rails : [];
+  const collected = [];
+
+  rails.forEach(function(rail) {
+    if (!rail) return;
+    const cardType = (rail.card_type || "").toLowerCase();
+    const title = (rail.title || "").toLowerCase();
+    const items = rail.items || rail.data || [];
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    if (screenType === "tvshows") {
+      if (cardType.indexOf("show") !== -1 || title.indexOf("show") !== -1 || title.indexOf("tv") !== -1) {
+        items.forEach(function(item) { collected.push(item); });
+      }
+    } else if (screenType === "shortvideos") {
+      if (cardType.indexOf("short") !== -1 || title.indexOf("short") !== -1) {
+        items.forEach(function(item) { collected.push(item); });
+      }
+    } else if (screenType === "videos") {
+      if (cardType.indexOf("video") !== -1 || title.indexOf("video") !== -1 || title.indexOf("trending") !== -1) {
+        items.forEach(function(item) { collected.push(item); });
+      }
+    }
+  });
+
+  return collected;
 }
 
 
@@ -760,7 +939,8 @@ function getSidebarElements() {
 function getHomeSidebarIndex() {
   const items = getSidebarElements();
   const homeIndex = items.findIndex(item => {
-    const label = (item.querySelector(".nav-label")?.innerText || "").trim().toLowerCase();
+    const labelEl = item.querySelector(".nav-label");
+    const label = ((labelEl && labelEl.innerText) || "").trim().toLowerCase();
     return label === "home";
   });
   return homeIndex >= 0 ? homeIndex : 0;
@@ -2498,6 +2678,7 @@ async function performSearch(query) {
 
 function renderSearchResults(items, query, railTitle) {
   SEARCH_STATE.results = items;
+  SEARCH_STATE.resultIndex = 0;
   
   const section = document.getElementById("search-results-section");
   const title = document.getElementById("search-results-title");
@@ -2513,18 +2694,19 @@ function renderSearchResults(items, query, railTitle) {
   const displayTitle = railTitle || (query ? `${query} Video List` : "entertainment Video List");
   title.innerText = `Results from "${displayTitle}"`;
   container.innerHTML = "";
+  container.scrollLeft = 0;
   
   items.forEach((item, idx) => {
     const card = document.createElement("div");
     card.className = "search-card-wrapper";
     card.setAttribute("data-index", idx.toString());
     
-    const thumbSrc = item.poster_image || item.thumbnail_image || "assets/placeholder.png";
+    const thumbSrc = getItemImageUrl(item, "landscape");
     const titleText = item.title || "";
     
     card.innerHTML = `
       <div class="search-card-live-tag">LIVE</div>
-      <img src="${thumbSrc}" alt="${titleText}" onerror="this.src='assets/placeholder.png'">
+      ${buildImageTag(thumbSrc, titleText)}
       <div class="search-card-title">${titleText}</div>
     `;
     
@@ -2555,6 +2737,7 @@ function renderSearchNoData(query, railTitle) {
   const displayTitle = railTitle || (query ? `${query} Video List` : "Search Results");
   title.innerText = `Results from "${displayTitle}"`;
   container.innerHTML = `<div class="search-no-data">Data Not Found</div>`;
+  container.scrollLeft = 0;
   section.style.display = "block";
 
   if (SEARCH_STATE.focusArea === "RESULTS") {
@@ -2590,54 +2773,44 @@ function updateSearchFocus() {
     const keyEl = document.querySelector(`.key-btn[data-row="${row}"][data-col="${col}"]`);
     if (keyEl) {
       keyEl.classList.add("focused");
-      keyEl.focus({ preventScroll: true });
+      safeFocusElement(keyEl);
     }
   } else if (SEARCH_STATE.focusArea === "BACK") {
     if (backBtn) {
       backBtn.classList.add("focused");
-      backBtn.focus({ preventScroll: true });
+      safeFocusElement(backBtn);
     }
   } else if (SEARCH_STATE.focusArea === "PROFILE") {
     if (profileBtn) {
       profileBtn.classList.add("focused");
-      profileBtn.focus({ preventScroll: true });
+      safeFocusElement(profileBtn);
     }
   } else if (SEARCH_STATE.focusArea === "INPUT") {
     if (searchInput) {
       searchInput.classList.add("focused");
-      searchInput.focus({ preventScroll: true });
+      safeFocusElement(searchInput);
     }
   } else if (SEARCH_STATE.focusArea === "VOICE") {
     if (voiceBtn) {
       voiceBtn.classList.add("focused");
-      voiceBtn.focus({ preventScroll: true });
+      safeFocusElement(voiceBtn);
     }
   } else if (SEARCH_STATE.focusArea === "HISTORY") {
     const idx = SEARCH_STATE.historyIndex;
     const chip = document.querySelector(`.history-chip[data-index="${idx}"]`);
     if (chip) {
       chip.classList.add("focused");
-      chip.focus({ preventScroll: true });
+      safeFocusElement(chip);
     }
   } else if (SEARCH_STATE.focusArea === "RESULTS") {
     const idx = SEARCH_STATE.resultIndex;
     const card = document.querySelector(`.search-card-wrapper[data-index="${idx}"]`);
     if (card) {
       card.classList.add("focused");
-      card.focus({ preventScroll: true });
+      safeFocusElement(card);
       
-      // Auto scroll container horizontally to bring card into view
       const container = document.getElementById("search-results-container");
-      if (container) {
-        const offsetLeft = card.offsetLeft;
-        const width = card.offsetWidth;
-        const containerWidth = container.offsetWidth;
-        const targetScrollLeft = Math.max(0, offsetLeft - (containerWidth / 2) + (width / 2));
-        container.scrollTo({
-          left: targetScrollLeft,
-          behavior: 'smooth'
-        });
-      }
+      scrollHorizontalItemIntoView(container, card);
     }
   }
 }
@@ -2875,6 +3048,13 @@ function handleSearchScreenKey(key, event) {
         SEARCH_STATE.keyboardCol = 0;
         updateSearchFocus();
       }
+    } else if (key === "ArrowDown") {
+      event.preventDefault();
+      updateSearchFocus();
+    } else if (key === "Enter") {
+      event.preventDefault();
+      const activeCard = document.querySelector(`.search-card-wrapper[data-index="${SEARCH_STATE.resultIndex}"]`);
+      if (activeCard) activeCard.click();
     }
   }
 }
@@ -2935,6 +3115,10 @@ async function openVideosScreen(menuItem) {
   }
   
   if (!items || items.length === 0) {
+    items = getHomeFallbackItemsForScreen("videos");
+  }
+
+  if (!items || items.length === 0) {
     items = [
       { title: "Sansani | Crime News | Ketan Murder Case: सिया...सहेली और खूनी भ...", video_duration: "21:55 Min", duration: "21:55", poster_image: "assets/placeholder.png" },
       { title: "Ram Mandir Chadhava Chori | Janhit: कल 6 जुलाई... क्या होगी 'चंपत' की...", video_duration: "42:31 Min", duration: "42:31", poster_image: "assets/placeholder.png" },
@@ -2966,7 +3150,7 @@ function renderVideosGrid() {
     const imgUrl = getItemImageUrl(item, "landscape");
     
     card.innerHTML = `
-      <img src="${imgUrl}" alt="${item.title || ''}">
+      ${buildImageTag(imgUrl, item.title || "")}
       ${cleanDur ? `<div class="video-duration-badge">${cleanDur}</div>` : ""}
       <div class="video-title-overlay">
         <div class="video-title-text">${item.title || "Video Title"}</div>
@@ -3034,13 +3218,13 @@ function updateVideosFocus() {
   if (VIDEOS_STATE.focusArea === "BACK") {
     if (backBtn) {
       backBtn.classList.add("focused");
-      backBtn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      safeScrollIntoView(backBtn);
     }
   } else if (VIDEOS_STATE.focusArea === "GRID") {
     const activeCard = document.querySelector(`.video-grid-card[data-index="${VIDEOS_STATE.activeIndex}"]`);
     if (activeCard) {
       activeCard.classList.add("focused");
-      activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      safeScrollIntoView(activeCard);
     }
   }
   
@@ -3171,6 +3355,10 @@ async function openTVShowsScreen(menuItem) {
   }
 
   if (!items || items.length === 0) {
+    items = getHomeFallbackItemsForScreen("tvshows");
+  }
+
+  if (!items || items.length === 0) {
     items = [
       { title: "जनहित", poster_image: "assets/placeholder.png" },
       { title: "सीधा सवाल", poster_image: "assets/placeholder.png" },
@@ -3203,7 +3391,7 @@ function renderTVShowsGrid() {
 
     card.innerHTML = `
       <div class="tvshow-card-thumb">
-        <img src="${imgUrl}" alt="${title}" loading="lazy">
+        ${buildImageTag(imgUrl, title)}
       </div>
       <div class="tvshow-card-title">${title}</div>
     `;
@@ -3254,10 +3442,10 @@ function updateTVShowsFocus() {
   document.querySelectorAll(".tvshow-card").forEach(c => c.classList.remove("focused"));
 
   if (TVSHOWS_STATE.focusArea === "BACK") {
-    if (backBtn) { backBtn.classList.add("focused"); backBtn.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    if (backBtn) { backBtn.classList.add("focused"); safeScrollIntoView(backBtn); }
   } else {
     const activeCard = document.querySelector(`.tvshow-card[data-index="${TVSHOWS_STATE.activeIndex}"]`);
-    if (activeCard) { activeCard.classList.add("focused"); activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    if (activeCard) { activeCard.classList.add("focused"); safeScrollIntoView(activeCard); }
   }
 
   // Background load on last row
@@ -3278,7 +3466,8 @@ function handleTVShowsScreenKey(key, event) {
       if (TVSHOWS_STATE.items.length > 0) { TVSHOWS_STATE.focusArea = "GRID"; TVSHOWS_STATE.activeIndex = 0; updateTVShowsFocus(); }
     } else if (key === "Enter") {
       event.preventDefault();
-      document.getElementById("tvshows-back-btn")?.click();
+      const backBtn = document.getElementById("tvshows-back-btn");
+      if (backBtn) backBtn.click();
     }
   } else if (TVSHOWS_STATE.focusArea === "GRID") {
     const total = TVSHOWS_STATE.items.length;
@@ -3298,7 +3487,8 @@ function handleTVShowsScreenKey(key, event) {
       if (cur % cols < cols - 1 && cur < total - 1) { TVSHOWS_STATE.activeIndex = cur + 1; updateTVShowsFocus(); }
     } else if (key === "Enter") {
       event.preventDefault();
-      document.querySelector(`.tvshow-card[data-index="${cur}"]`)?.click();
+      const activeCard = document.querySelector(`.tvshow-card[data-index="${cur}"]`);
+      if (activeCard) activeCard.click();
     }
   }
 }
@@ -3365,6 +3555,10 @@ async function openShortVideosScreen(menuItem) {
   }
 
   if (!items || items.length === 0) {
+    items = getHomeFallbackItemsForScreen("shortvideos");
+  }
+
+  if (!items || items.length === 0) {
     items = [
       { title: "Influencer से Actor बनने वाली अपनी journey पर क्या बोला Sanchita Bashu ने?", poster_image: "assets/placeholder.png" },
       { title: "SRK की King को पीछे छोड़ गई Ramayana!", poster_image: "assets/placeholder.png" },
@@ -3395,7 +3589,7 @@ function renderShortVideosGrid() {
     const title = item.title || item.name || "Short Video";
 
     card.innerHTML = `
-      <img src="${imgUrl}" alt="${title}" loading="lazy">
+      ${buildImageTag(imgUrl, title)}
       <div class="shortvideo-badge">
         <div class="shortvideo-badge-text">ENT<br>LIVE</div>
       </div>
@@ -3449,10 +3643,10 @@ function updateShortVideosFocus() {
   document.querySelectorAll(".shortvideo-card").forEach(c => c.classList.remove("focused"));
 
   if (SHORTVIDEOS_STATE.focusArea === "BACK") {
-    if (backBtn) { backBtn.classList.add("focused"); backBtn.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    if (backBtn) { backBtn.classList.add("focused"); safeScrollIntoView(backBtn); }
   } else {
     const activeCard = document.querySelector(`.shortvideo-card[data-index="${SHORTVIDEOS_STATE.activeIndex}"]`);
-    if (activeCard) { activeCard.classList.add("focused"); activeCard.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    if (activeCard) { activeCard.classList.add("focused"); safeScrollIntoView(activeCard); }
   }
 
   // Background load on last row
@@ -3473,7 +3667,8 @@ function handleShortVideosScreenKey(key, event) {
       if (SHORTVIDEOS_STATE.items.length > 0) { SHORTVIDEOS_STATE.focusArea = "GRID"; SHORTVIDEOS_STATE.activeIndex = 0; updateShortVideosFocus(); }
     } else if (key === "Enter") {
       event.preventDefault();
-      document.getElementById("shortvideos-back-btn")?.click();
+      const backBtn = document.getElementById("shortvideos-back-btn");
+      if (backBtn) backBtn.click();
     }
   } else if (SHORTVIDEOS_STATE.focusArea === "GRID") {
     const total = SHORTVIDEOS_STATE.items.length;
@@ -3493,7 +3688,8 @@ function handleShortVideosScreenKey(key, event) {
       if (cur % cols < cols - 1 && cur < total - 1) { SHORTVIDEOS_STATE.activeIndex = cur + 1; updateShortVideosFocus(); }
     } else if (key === "Enter") {
       event.preventDefault();
-      document.querySelector(`.shortvideo-card[data-index="${cur}"]`)?.click();
+      const activeCard = document.querySelector(`.shortvideo-card[data-index="${cur}"]`);
+      if (activeCard) activeCard.click();
     }
   }
 }
