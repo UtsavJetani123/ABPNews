@@ -3694,12 +3694,119 @@ function handleShortVideosScreenKey(key, event) {
   }
 }
 
+// ==============================================================
+// Exit Confirmation Popup
+// ==============================================================
+let exitPopupOpen = false;
+let exitPopupFocus = "CANCEL"; // "CANCEL" | "CONFIRM"
+
+function showExitPopup() {
+  const popup = document.getElementById("exit-popup");
+  if (!popup) return;
+  exitPopupOpen = true;
+  exitPopupFocus = "CANCEL";
+  popup.style.display = "flex";
+  updateExitPopupFocus();
+}
+
+function hideExitPopup() {
+  const popup = document.getElementById("exit-popup");
+  if (!popup) return;
+  exitPopupOpen = false;
+  popup.style.display = "none";
+  const cancelBtn = document.getElementById("exit-popup-cancel");
+  const confirmBtn = document.getElementById("exit-popup-confirm");
+  if (cancelBtn) cancelBtn.classList.remove("focused");
+  if (confirmBtn) confirmBtn.classList.remove("focused");
+}
+
+function updateExitPopupFocus() {
+  const cancelBtn = document.getElementById("exit-popup-cancel");
+  const confirmBtn = document.getElementById("exit-popup-confirm");
+  if (!cancelBtn || !confirmBtn) return;
+  cancelBtn.classList.toggle("focused", exitPopupFocus === "CANCEL");
+  confirmBtn.classList.toggle("focused", exitPopupFocus === "CONFIRM");
+}
+
+function handleExitPopupKey(key, event) {
+  event.preventDefault();
+  if (key === "ArrowLeft" || key === "ArrowRight") {
+    exitPopupFocus = exitPopupFocus === "CANCEL" ? "CONFIRM" : "CANCEL";
+    updateExitPopupFocus();
+  } else if (key === "Enter") {
+    if (exitPopupFocus === "CONFIRM") {
+      // Close the app on webOS
+      if (window.webOS && typeof window.webOS.platformBack === "function") {
+        window.webOS.platformBack();
+      } else {
+        window.close();
+      }
+    } else {
+      hideExitPopup();
+    }
+  } else if (key === "GoBack" || key === "Backspace" || key === "XF86Back" || event.keyCode === 461 || event.keyCode === 10009) {
+    hideExitPopup();
+  }
+}
+
+// Wire up click handlers for popup buttons
+document.addEventListener("DOMContentLoaded", function () {
+  const cancelBtn = document.getElementById("exit-popup-cancel");
+  const confirmBtn = document.getElementById("exit-popup-confirm");
+  if (cancelBtn) cancelBtn.addEventListener("click", hideExitPopup);
+  if (confirmBtn) confirmBtn.addEventListener("click", function () {
+    if (window.webOS && typeof window.webOS.platformBack === "function") {
+      window.webOS.platformBack();
+    } else {
+      window.close();
+    }
+  });
+});
+
+// Helper: navigate back to Home from content screens
+function goBackToHome() {
+  switchScreen("HOME");
+}
 
 window.addEventListener("keydown", (event) => {
   const key = event.key;
-  
+
+  // ── Global Back Key Handling ─────────────────────────────────
+  // keyCode 10009 = webOS standard Back, 461 = LG remote Back
+  const isBackKey = key === "GoBack" || key === "XF86Back" ||
+    event.keyCode === 10009 || event.keyCode === 461 ||
+    // Allow Backspace only when NOT in a search text-input area
+    (key === "Backspace" && APP_STATE.currentScreen !== "SEARCH");
+
+  if (isBackKey) {
+    event.preventDefault();
+    // If exit popup is already open, delegate to its handler
+    if (exitPopupOpen) {
+      handleExitPopupKey(key, event);
+      return;
+    }
+    const screen = APP_STATE.currentScreen;
+    // Content screens → return to Home
+    if (screen === "VIDEOS" || screen === "TVSHOWS" || screen === "SHORTVIDEOS") {
+      goBackToHome();
+      return;
+    }
+    // Home or Search → show exit confirmation
+    if (screen === "HOME" || screen === "SEARCH") {
+      showExitPopup();
+      return;
+    }
+  }
+
+  // If exit popup is open, all other keys are blocked (only popup handles input)
+  if (exitPopupOpen) {
+    handleExitPopupKey(key, event);
+    return;
+  }
+
   // 1. Language Screen Navigation
   if (APP_STATE.currentScreen === "LANGUAGE") {
+
     if (key === "ArrowLeft") {
       event.preventDefault();
       if (currentLanguageIndex > 0) {
